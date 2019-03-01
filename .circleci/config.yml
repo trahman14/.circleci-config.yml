@@ -1,19 +1,25 @@
 version: 2
 jobs:
   build:
-    machine:
-      ruby:
-        version: 2.0.0-p0
-      environment:
-        SELENIUM_HOST: hub.browserstack.com
-        BS_AUTOMATE_PROJECT: "Run on circleCI"
-        BS_AUTOMATE_BUILD: "build No. $CIRCLE_BUILD_NUM for circleCI"
-        SELENIUM_PLATFORM: WINDOWS
-        BS_AUTOMATE_OS_VERSION: 10
-        SELENIUM_BROWSER: IE
-        SELENIUM_VERSION: 11
+    docker:
+      - image: circleci/python:3.6.2-stretch-browsers
+        environment:
+          FLASK_CONFIG: testing
+          TEST_DATABASE_URL: postgresql://ubuntu@localhost/circle_test?sslmode=disable
+      - image: circleci/postgres:9.6.5-alpine-ram
+        environment:
+          POSTGRES_USER: ubuntu
+          POSTGRES_DB: circle_test
+          POSTGRES_PASSWORD: ""
     steps:
       - checkout
+      - run: mkdir test-reports
       - run:
-         name: Move to cucumber/ and Run the tests.
-         command: cd cucumber/ && bundle install && bundle exec cucumber
+          name: Download Selenium
+          command: |
+            curl -O http://selenium-release.storage.googleapis.com/3.5/selenium-server-standalone-3.5.3.jar
+      - run:
+          name: Start Selenium
+          command: |
+            java -jar selenium-server-standalone-3.12.0.jar -log test-reports/selenium.log
+          background: true
